@@ -10,30 +10,59 @@ def plot_chart(chart: RadarChart):
 
     num_vars = len(labels)
 
-    # compute angles
-    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-    angles += angles[:1]  # closing the circle
+    # angles
+    angles = np.linspace(np.pi / 2, 2*np.pi + np.pi/2, num_vars, endpoint=False)
 
-    # prepare the plots
-    fig, ax = plt.subplots(subplot_kw=dict(polar=True))
+    # unit circle points
+    unit = np.c_[np.cos(angles), np.sin(angles)]
 
-    # Polar settings
-    ax.set_theta_offset(np.pi / 2)  # type: ignore
-    ax.set_theta_direction(-1)      # type: ignore
+    fig, ax = plt.subplots()
 
-    ax.set_thetagrids(np.degrees(angles[:-1]), labels) # type: ignore
+    ax.set_aspect('equal')
+    ax.axis('off')
 
-    ax.set_rlabel_position(0)       # type: ignore
-    ax.set_ylim(0, 10)
+    # polygon frame
+    closed = np.vstack([unit, unit[0]])
+    ax.plot(closed[:, 0], closed[:, 1], color="black")
 
-    # Daten plotten
+    # radial lines
+    for x, y in unit:
+        ax.plot([0, x], [0, y], color="gray", alpha=0.4)
+
+    # labels
+    for i, (x, y) in enumerate(unit):
+        ax.text(x*1.1, y*1.1, labels[i], ha="center", va="center")
+
+    # datasets
     for ds in datasets:
-        values = ds.values + ds.values[:1]
+        vals = np.array(ds.values)
+        vals = vals / 10.0  # normalize (wichtig!)
+        pts = unit * vals[:, None]
+        pts = np.vstack([pts, pts[0]])
 
-        ax.plot(angles, values, label=ds.name)
-        ax.fill(angles, values, alpha=chart.style.alpha)
+        ax.plot(pts[:, 0], pts[:, 1], label=ds.name)
+        ax.fill(pts[:, 0], pts[:, 1], alpha=chart.style.alpha)
+    
+    levels = [2, 4, 6, 8, 10]
+    for r in levels:
+        radius = r / 10.0
+        ring = unit * (r / 10.0)
+        ring = np.vstack([ring, ring[0]])
+        ax.plot(ring[:, 0], ring[:, 1], color="gray", alpha=0.2)
 
-    ax.set_title(chart.data.title, pad=20)
-    ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.1))
+        # Zahlen anzeigen
+        ax.text(
+        -0.03,
+        radius,
+        str(r),
+        ha="right",
+        va="center",
+        fontsize=8
+        )
+    
+    
+
+    ax.set_title(chart.data.title)
+    ax.legend()
 
     plt.show()
