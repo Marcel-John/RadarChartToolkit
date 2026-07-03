@@ -21,6 +21,15 @@ class RadarStyle:
     fill_color: str
     fill: bool
     alpha: float
+    ring_count: int = 5
+
+    frame_width: float = 2.0
+    grid_width: float = 0.8
+
+    label_distance: float = 1.1
+    scale_label_offset: float = 0.03
+
+    grid_alpha: float = 0.3
 
 # combining RadarData and RadarStyle for easy acces
 @dataclass

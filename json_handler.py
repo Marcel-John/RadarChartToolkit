@@ -20,7 +20,17 @@ def to_dict(chart: RadarChart) -> dict:
             "line_color": chart.style.line_color,
             "fill_color": chart.style.fill_color,
             "fill": chart.style.fill,
-            "alpha": chart.style.alpha
+            "alpha": chart.style.alpha,
+
+            "ring_count": chart.style.ring_count,
+
+            "frame_width": chart.style.frame_width,
+            "grid_width": chart.style.grid_width,
+
+            "label_distance": chart.style.label_distance,
+            "scale_label_offset": chart.style.scale_label_offset,
+
+            "grid_alpha": chart.style.grid_alpha
         }
     }
 
@@ -45,7 +55,16 @@ def from_dict(data: dict) -> RadarChart:
         line_color=data["style"]["line_color"],
         fill_color=data["style"]["fill_color"],
         fill=data["style"]["fill"],
-        alpha=data["style"]["alpha"]
+        alpha=data["style"]["alpha"],
+        ring_count=data["style"]["ring_count"],
+
+        frame_width=data["style"]["frame_width"],
+        grid_width=data["style"]["grid_width"],
+
+        label_distance=data["style"]["label_distance"],
+        scale_label_offset=data["style"]["scale_label_offset"],
+
+        grid_alpha=data["style"]["grid_alpha"]
     )
 
     return RadarChart(
