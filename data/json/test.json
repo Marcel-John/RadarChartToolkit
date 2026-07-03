@@ -1,0 +1,27 @@
+{
+  "data": {
+    "title": "Character Comparison",
+    "labels": ["Strength", "Intelligence", "Speed", "Magic", "Defense"],
+    "datasets": [
+      {
+        "name": "Warrior",
+        "values": [9, 4, 6, 2, 8]
+      },
+      {
+        "name": "Mage",
+        "values": [3, 10, 5, 9, 4]
+      },
+      {
+        "name": "Archer",
+        "values": [6, 6, 9, 3, 5]
+      }
+    ]
+  },
+  "style": {
+    "frame": "circle",
+    "line_color": "blue",
+    "fill_color": "blue",
+    "fill": true,
+    "alpha": 0.25
+  }
+}
