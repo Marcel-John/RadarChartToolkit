@@ -107,6 +107,66 @@ def load_chart(filepath: str) -> RadarChart:
         style=style
     )
 
+def _save_meta(sheet, chart: RadarChart):
+    sheet["A1"] = "title"
+    sheet["B2"] = chart.data.title
+
+
+def _save_data(sheet, chart: RadarChart):
+    # Header
+    sheet.cell(row=1, column=1, value="label")
+
+    for col, ds in enumerate(chart.data.datasets, start=2):
+        sheet.cell(row=1, column=col, value=ds.name)
+
+    # Rows
+    for row_idx, label in enumerate(chart.data.labels, start=2):
+        sheet.cell(row=row_idx, column=1, value=label)
+
+        for col_idx, ds in enumerate(chart.data.datasets, start=2):
+            sheet.cell(
+                row=row_idx,
+                column=col_idx,
+                value=ds.values[row_idx - 2]
+            )
+
+
+def _save_style(sheet, style: RadarStyle):
+    style_dict = {
+        "frame": style.frame,
+        "line_color": style.line_color,
+        "fill_color": style.fill_color,
+        "fill": style.fill,
+        "alpha": style.alpha,
+        "ring_count": style.ring_count,
+        "frame_width": style.frame_width,
+        "grid_width": style.grid_width,
+        "label_distance": style.label_distance,
+        "scale_label_offset": style.scale_label_offset,
+        "grid_alpha": style.grid_alpha,
+    }
+
+    for row, (key, value) in enumerate(style_dict.items(), start=1):
+        sheet.cell(row=row, column=1, value=key)
+        sheet.cell(row=row, column=2, value=value)
+
+
 def save_chart(chart: RadarChart, filepath: str):
     """Speichert ein RadarChart als Excel-Datei."""
-    pass
+
+    workbook = Workbook()
+
+    # Sheets erstellen / holen
+    if "Sheet" in workbook.sheetnames:
+        del workbook["Sheet"]
+    meta_sheet = workbook.create_sheet("Meta", 0)
+    data_sheet = workbook.create_sheet("Data", 1)
+    style_sheet = workbook.create_sheet("Style", 2)
+
+    # schreiben
+    _save_meta(meta_sheet, chart)
+    _save_data(data_sheet, chart)
+    _save_style(style_sheet, chart.style)
+
+    # speichern
+    workbook.save(filepath)
