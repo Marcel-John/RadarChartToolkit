@@ -108,8 +108,10 @@ def load_chart(filepath: str) -> RadarChart:
     )
 
 def _save_meta(sheet, chart: RadarChart):
-    sheet["A1"] = "title"
-    sheet["B1"] = chart.data.title
+    sheet["A1"] = "Property"
+    sheet["B1"] = "Value"
+    sheet["A2"] = "title"
+    sheet["B2"] = chart.data.title
 
 
 def _save_data(sheet, chart: RadarChart):
@@ -132,6 +134,8 @@ def _save_data(sheet, chart: RadarChart):
 
 
 def _save_style(sheet, style: RadarStyle):
+    sheet["A1"] = "Property"
+    sheet["B1"] = "Value"
     style_dict = {
         "frame": style.frame,
         "line_color": style.line_color,
@@ -146,7 +150,7 @@ def _save_style(sheet, style: RadarStyle):
         "grid_alpha": style.grid_alpha,
     }
 
-    for row, (key, value) in enumerate(style_dict.items(), start=1):
+    for row, (key, value) in enumerate(style_dict.items(), start=2):
         sheet.cell(row=row, column=1, value=key)
         sheet.cell(row=row, column=2, value=value)
 
