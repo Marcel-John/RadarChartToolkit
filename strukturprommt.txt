@@ -1,0 +1,426 @@
+# RadarChartToolkit – Projektübersicht
+
+## Projektziel
+
+Entwicklung eines modularen Python-Toolkits zum Erstellen, Bearbeiten, Importieren, Exportieren und Visualisieren von Radar Charts.
+
+Der Fokus liegt auf:
+- sauberer Architektur
+- klarer Trennung der Verantwortlichkeiten
+- guter Erweiterbarkeit
+- einfacher Integration in andere Projekte (z.B. Godot)
+
+Das Projekt soll nicht nur ein einzelnes Skript sein, sondern eine wiederverwendbare Bibliothek.
+
+---
+
+# Aktueller Projektstand
+
+## Projektstruktur
+
+```
+RadarChartToolkit/
+│
+├── models.py
+├── radar_plot.py
+├── excel_handler.py
+├── json_handler.py
+├── main.py
+│
+├── json/
+│   └── test.json
+│
+├── excel/
+│   └── (zukünftige Testdateien)
+│
+├── requirements.txt
+├── README.md
+├── LICENSE
+└── .gitignore
+```
+
+Das Repository ist bereits auf GitHub eingerichtet.
+
+---
+
+# Datenmodell (models.py)
+
+Es existiert ein vollständiges Datenmodell auf Basis von Dataclasses.
+
+## RadarDataset
+
+Speichert einen einzelnen Datensatz.
+
+```python
+RadarDataset
+├── name
+└── values
+```
+
+---
+
+## RadarData
+
+Speichert sämtliche Diagrammdaten.
+
+```python
+RadarData
+├── title
+├── labels
+└── datasets
+```
+
+---
+
+## RadarStyle
+
+Speichert sämtliche Darstellungseinstellungen.
+
+Momentan vorhanden:
+
+- frame
+- line_color
+- fill_color
+- fill
+- alpha
+- ring_count
+- frame_width
+- grid_width
+- label_distance
+- scale_label_offset
+- grid_alpha
+
+Alle Styleparameter sind zentral an einer Stelle definiert.
+
+---
+
+## RadarChart
+
+Kombiniert Daten und Style.
+
+```python
+RadarChart
+├── RadarData
+└── RadarStyle
+```
+
+---
+
+# Plot-System (radar_plot.py)
+
+Das Plotting wurde komplett modular aufgebaut.
+
+Es existieren folgende Funktionen:
+
+```
+plot_chart()
+
+│
+├── _get_max_value()
+├── _calculate_scale()
+├── _compute_geometry()
+├── _setup_axes()
+├── _draw_frame()
+├── _draw_grid()
+├── _draw_labels()
+└── _draw_datasets()
+```
+
+---
+
+## Eigenschaften des Plotters
+
+Bereits umgesetzt:
+
+- Polygon-Radar statt Kreis
+- Polygon-Gitter
+- Radiallinien
+- Automatische Skalierung
+- Mehrere Datensätze gleichzeitig
+- Automatische Obergrenze
+- Automatische Ringberechnung
+- Styleparameter werden verwendet
+- Modularer Aufbau
+- Keine großen Funktionen
+
+---
+
+# Excel Import
+
+Der Excel Import ist nahezu vollständig.
+
+Aktuelle Struktur:
+
+```
+load_chart()
+
+│
+├── _load_meta()
+├── _load_data()
+└── _load_style()
+```
+
+Importiert:
+
+Meta
+- Titel
+
+Data
+- Labels
+- mehrere Datensätze
+
+Style
+- sämtliche Styleparameter
+
+Außerdem:
+
+- Typprüfung
+- Fehlerbehandlung
+- None-Prüfungen
+- numerische Validierung
+
+---
+
+# Excel Export
+
+Der Export ist ebenfalls modular.
+
+Aktuelle Struktur:
+
+```
+save_chart()
+
+│
+├── _save_meta()
+├── _save_data()
+└── _save_style()
+```
+
+Exportiert:
+
+Meta
+
+```
+Property | Value
+title    | ...
+```
+
+Data
+
+```
+Label | Dataset1 | Dataset2 | ...
+```
+
+Style
+
+```
+Property | Value
+```
+
+Das Excelformat entspricht dem Importformat.
+
+---
+
+# JSON Handler
+
+Ein JSON Handler existiert bereits.
+
+Momentan implementiert:
+
+- Objekt → Dictionary
+- Dictionary → Objekt
+- JSON speichern
+- JSON laden
+
+JSON dient hauptsächlich:
+
+- Tests
+- Debugging
+- später Godot
+
+Excel ist langfristig das Hauptformat.
+
+---
+
+# GitHub
+
+Bereits erledigt:
+
+- Git Repository
+- SSH eingerichtet
+- README
+- LICENSE
+- .gitignore
+- requirements.txt
+
+Projekt ist versioniert.
+
+---
+
+# Architektur
+
+Es wurde bewusst auf Modularität geachtet.
+
+Jede Datei besitzt eine klar definierte Aufgabe.
+
+```
+models
+        │
+        ▼
+excel_handler
+        │
+        ▼
+RadarChart Objekt
+        │
+        ▼
+radar_plot
+```
+
+Keine Funktion übernimmt mehrere Verantwortlichkeiten.
+
+---
+
+# Entwicklungsprinzipien
+
+Während der Entwicklung gelten folgende Regeln:
+
+- kleine Funktionen
+- Single Responsibility Principle
+- möglichst wenige Magic Numbers
+- Typannotationen
+- Dataclasses
+- Fehler früh erkennen
+- keine riesigen Funktionen
+- leicht testbar
+- leicht erweiterbar
+
+---
+
+# Was als Nächstes umgesetzt werden soll
+
+Die Reihenfolge wurde bereits festgelegt und soll möglichst eingehalten werden.
+
+## 1. Excel Roundtrip testen
+
+Prüfen:
+
+```
+RadarChart
+      ↓
+save_chart()
+
+Excel
+
+      ↓
+load_chart()
+
+RadarChart
+```
+
+Das geladene Objekt soll identisch zum ursprünglichen sein.
+
+---
+
+## 2. Excel Validator
+
+Vor dem Laden soll geprüft werden:
+
+- existieren alle Sheets?
+- stimmen die Namen?
+- fehlen Stylewerte?
+- fehlen Labels?
+- Datasetlängen korrekt?
+- numerische Werte gültig?
+
+Dadurch entstehen verständliche Fehlermeldungen statt Python Exceptions.
+
+---
+
+## 3. Plot weiter verbessern
+
+Mögliche Erweiterungen:
+
+- individuelle Farben pro Dataset
+- Marker
+- Linienstärken
+- verschiedene Frame-Typen
+- bessere Legende
+- automatische Schriftgrößen
+- Export als PNG
+- Export als SVG
+- DPI-Einstellungen
+
+---
+
+## 4. Style erweitern
+
+Weitere mögliche Styleparameter:
+
+- Hintergrundfarbe
+- Gridfarbe
+- Textfarbe
+- Legendeneinstellungen
+- Markergröße
+- Markerstil
+- Transparenz einzelner Datensätze
+
+---
+
+## 5. Editor entwickeln
+
+Später soll ein grafischer Editor entstehen.
+
+Mögliche Funktionen:
+
+- Labels bearbeiten
+- Datensätze hinzufügen
+- Style ändern
+- Live-Vorschau
+- Import
+- Export
+
+---
+
+## 6. Godot Integration
+
+Langfristiges Ziel.
+
+Godot soll:
+
+- Excel laden
+- JSON laden
+- RadarCharts anzeigen
+- Werte verändern
+- Charts exportieren
+
+---
+
+## 7. Weitere Dateiformate
+
+Geplant:
+
+- CSV
+- YAML
+- XML
+
+je nach Bedarf.
+
+---
+
+# Langfristige Vision
+
+Das Projekt soll zu einem vollständigen RadarChart Toolkit werden.
+
+Ziele:
+
+- modulare Bibliothek
+- Python API
+- grafischer Editor
+- Excel Workflow
+- JSON Workflow
+- Godot Integration
+- einfach erweiterbar
+- sauber dokumentiert
+- Open Source
+
+Der Fokus liegt dabei auf einer professionellen Codebasis mit klarer Struktur und guter Wartbarkeit.

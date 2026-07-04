@@ -109,7 +109,7 @@ def load_chart(filepath: str) -> RadarChart:
 
 def _save_meta(sheet, chart: RadarChart):
     sheet["A1"] = "title"
-    sheet["B2"] = chart.data.title
+    sheet["B1"] = chart.data.title
 
 
 def _save_data(sheet, chart: RadarChart):
