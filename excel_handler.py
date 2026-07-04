@@ -1,5 +1,6 @@
 from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
+from excel_validator import validate_chart_excel
 
 from models import (
     RadarChart,
@@ -85,6 +86,8 @@ def load_chart(filepath: str) -> RadarChart:
     """Lädt ein RadarChart aus einer Excel-Datei."""
 
     workbook = load_workbook(filepath)
+
+    validate_chart_excel(workbook)
 
     meta_sheet = workbook["Meta"]
     data_sheet = workbook["Data"]
