@@ -5,6 +5,9 @@ from dataclasses import dataclass
 class RadarDataset:
     name: str
     values: list[float]
+    color: str = "#007ACC"
+    marker: str = "o"
+    line_width: float = 2.0
 
 # datastructure for storing the data
 @dataclass
@@ -30,6 +33,8 @@ class RadarStyle:
     scale_label_offset: float = 0.03
 
     grid_alpha: float = 0.3
+
+    dpi: int = 300
 
 # combining RadarData and RadarStyle for easy acces
 @dataclass

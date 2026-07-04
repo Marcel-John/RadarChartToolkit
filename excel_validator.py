@@ -1,4 +1,3 @@
-# excel_validator.py
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
