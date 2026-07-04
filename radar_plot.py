@@ -107,8 +107,9 @@ def _draw_datasets(ax, unit, datasets, style, max_value):
         points = unit * values[:, None]
         points = np.vstack([points, points[0]])
 
-        ax.plot(points[:, 0], points[:, 1], label=ds.name)
-        ax.fill(points[:, 0], points[:, 1], alpha=style.alpha)
+        ax.plot(points[:, 0], points[:, 1], label=ds.name, color=style.line_color)
+        if style.fill:
+            ax.fill(points[:, 0], points[:, 1], color=style.fill_color, alpha=style.alpha)
 
 def plot_chart(chart: RadarChart):
     labels = chart.data.labels
