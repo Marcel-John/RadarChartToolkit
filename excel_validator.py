@@ -60,9 +60,40 @@ def validate_style_sheet(sheet: Worksheet) -> None:
     if missing_keys:
         raise ValueError(f"Validierungsfehler im Sheet 'Style': Folgende Style-Parameter fehlen: {', '.join(missing_keys)}!")
 
-def validate_chart_excel(workbook) -> None:
-    """Führt alle Validierungen nacheinander aus."""
-    validate_excel_structure(workbook)
-    validate_meta_sheet(workbook["Meta"])
-    validate_data_sheet(workbook["Data"])
-    validate_style_sheet(workbook["Style"])
+def validate_chart_excel(workbook: Workbook) -> None:
+    """Validiert die Struktur und Datentypen einer RadarChart-Excel-Datei."""
+    
+    # 1. Prüfen, ob alle benötigten Sheets existieren
+    required_sheets = ["Meta", "Data", "Style"]
+    for sheet_name in required_sheets:
+        if sheet_name not in workbook.sheetnames:
+            raise ValueError(f"Fehlendes Sheet in Excel-Datei: '{sheet_name}'")
+
+    data_sheet = workbook["Data"]
+
+    # 2. Zeile 4 prüfen: Linienstärken müssen Zahlen sein
+    for col_idx, cell in enumerate(data_sheet[4][1:], start=2):
+        if cell.value is not None and not isinstance(cell.value, (int, float)):
+            raise TypeError(
+                f"Validierungsfehler im Sheet 'Data': Linienstärke in Zeile 4, Spalte {col_idx} muss eine Zahl sein. Gefunden: {cell.value}"
+            )
+
+    # 3. Ab Zeile 5 prüfen: Echte Datenwerte müssen Zahlen sein
+    for row_idx, row in enumerate(data_sheet.iter_rows(min_row=5, values_only=True), start=5):
+        # Leere Zeilen ignorieren
+        if row[0] is None and all(v is None for v in row[1:]):
+            continue
+
+        label = row[0]
+        if label is None:
+            raise ValueError(f"Validierungsfehler im Sheet 'Data': Fehlendes Label in Zeile {row_idx}, Spalte 1.")
+
+        for col_idx, val in enumerate(row[1:], start=2):
+            if val is None:
+                raise ValueError(
+                    f"Validierungsfehler im Sheet 'Data': Leeres Datenfeld in Zeile {row_idx}, Spalte {col_idx}."
+                )
+            if not isinstance(val, (int, float)):
+                raise TypeError(
+                    f"Validierungsfehler im Sheet 'Data': Ungültiger Datentyp in Zeile {row_idx}, Spalte {col_idx}. Erwartet: Zahl, Gefunden: '{val}' ({type(val).__name__})!"
+                )

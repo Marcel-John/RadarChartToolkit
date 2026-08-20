@@ -1,9 +1,11 @@
 import customtkinter as ctk
+from tkinter import filedialog, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
 from models import RadarChart, RadarData, RadarDataset, RadarStyle
-from radar_plot import create_figure
+from radar_plot import create_figure, export_chart_image
+from excel_handler import load_chart
 
 # Modernes Design aktivieren
 ctk.set_appearance_mode("Dark")
@@ -28,11 +30,11 @@ class StarChartEditor(ctk.CTk):
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Chart Editor", font=ctk.CTkFont(size=20, weight="bold"))
         self.logo_label.pack(pady=(20, 30))
 
-        # Platzhalter-Buttons für später
-        self.btn_load = ctk.CTkButton(self.sidebar_frame, text="Excel Laden")
+        # Buttons mit 'command' verknüpft!
+        self.btn_load = ctk.CTkButton(self.sidebar_frame, text="Excel Laden", command=self.load_from_excel)
         self.btn_load.pack(pady=10, padx=20, fill="x")
 
-        self.btn_save = ctk.CTkButton(self.sidebar_frame, text="Als Bild exportieren")
+        self.btn_save = ctk.CTkButton(self.sidebar_frame, text="Als Bild exportieren", command=self.export_image)
         self.btn_save.pack(pady=10, padx=20, fill="x")
 
         # --- RECHTES PANEL: LIVE VORSCHAU ---
@@ -72,6 +74,37 @@ class StarChartEditor(ctk.CTk):
         
         # Speicher freigeben
         plt.close(fig)
+
+    def load_from_excel(self):
+        """Öffnet einen Dialog, lädt die Excel-Datei und aktualisiert die Vorschau."""
+        filepath = filedialog.askopenfilename(
+            title="Excel-Datei auswählen",
+            filetypes=[("Excel Files", "*.xlsx")]
+        )
+        
+        if filepath:
+            try:
+                # Hier kommt dein mächtiger excel_handler und validator ins Spiel!
+                self.current_chart = load_chart(filepath)
+                self.update_preview()
+            except Exception as e:
+                # Fängt Fehler ab (z.B. wenn der Validator anschlägt)
+                messagebox.showerror("Fehler beim Laden", f"Die Datei konnte nicht geladen werden:\n\n{str(e)}")
+
+    def export_image(self):
+        """Öffnet einen Speichern-Dialog und exportiert das aktuelle Chart."""
+        filepath = filedialog.asksaveasfilename(
+            title="Bild exportieren",
+            defaultextension=".png",
+            filetypes=[("PNG Image", "*.png"), ("SVG Vector", "*.svg")]
+        )
+        
+        if filepath:
+            try:
+                export_chart_image(self.current_chart, filepath)
+                messagebox.showinfo("Erfolg", f"Bild erfolgreich gespeichert unter:\n{filepath}")
+            except Exception as e:
+                messagebox.showerror("Fehler beim Export", f"Das Bild konnte nicht gespeichert werden:\n\n{str(e)}")
 
 if __name__ == "__main__":
     app = StarChartEditor()

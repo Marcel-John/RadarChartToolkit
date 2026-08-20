@@ -28,7 +28,10 @@ def _load_data(sheet: Worksheet) -> tuple[list[str], list[RadarDataset]]:
     dataset_names = [str(cell.value) for cell in sheet[1][1:]]
     
     # Zeile 2-4: Optische Eigenschaften (mit Fallback-Werten und Typ-Absicherung für den Linter)
-    dataset_colors = [str(cell.value) if cell.value is not None else "#007ACC" for cell in sheet[2][1:]]
+    dataset_colors = [
+        str(cell.value) if cell.value is not None and not isinstance(cell.value, (int, float)) else "#007ACC"
+        for cell in sheet[2][1:]
+    ]
     dataset_markers = [str(cell.value) if cell.value is not None else "o" for cell in sheet[3][1:]]
     
     # Das isinstance() löst die ConvertibleToFloat-Warnung deines Typprüfers auf
