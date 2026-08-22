@@ -27,20 +27,18 @@ def _load_data(sheet: Worksheet) -> tuple[list[str], list[RadarDataset]]:
     # Zeile 1: Namen
     dataset_names = [str(cell.value) for cell in sheet[1][1:]]
     
-    # Zeile 2-4: Optische Eigenschaften (mit Fallback-Werten und Typ-Absicherung für den Linter)
+    # Zeile 2-4: Optische Eigenschaften
     dataset_colors = [
         str(cell.value) if cell.value is not None and not isinstance(cell.value, (int, float)) else "#007ACC"
         for cell in sheet[2][1:]
     ]
     dataset_markers = [str(cell.value) if cell.value is not None else "o" for cell in sheet[3][1:]]
     
-    # Das isinstance() löst die ConvertibleToFloat-Warnung deines Typprüfers auf
     dataset_widths = [
         float(cell.value) if isinstance(cell.value, (int, float, str)) else 2.0 
         for cell in sheet[4][1:]
     ]
 
-    # FIX: Die optischen Eigenschaften via zip() direkt den Datasets übergeben
     datasets = [
         RadarDataset(
             name=name,
@@ -126,6 +124,7 @@ def load_chart(filepath: str) -> RadarChart:
 
 
 def _save_meta(sheet, chart: RadarChart):
+    """Speichert den Titel exakt so ab, wie _load_meta ihn erwartet (in B2)."""
     sheet["A1"] = "Property"
     sheet["B1"] = "Value"
     sheet["A2"] = "title"
@@ -145,7 +144,6 @@ def _save_data(sheet, chart: RadarChart):
         sheet.cell(row=3, column=col, value=ds.marker)
         sheet.cell(row=4, column=col, value=ds.line_width)
 
-    # FIX: Mit dem Listen-Index (idx) arbeiten, da die Excel-Zeilen (row_idx) verschoben sind
     for idx, label in enumerate(chart.data.labels):
         row_idx = idx + 5
         sheet.cell(row=row_idx, column=1, value=label)
@@ -154,11 +152,12 @@ def _save_data(sheet, chart: RadarChart):
             sheet.cell(
                 row=row_idx,
                 column=col_idx,
-                value=ds.values[idx]  # Nutzt jetzt sicher den korrekten Array-Index (0, 1, 2...)
+                value=ds.values[idx]
             )
 
 
 def _save_style(sheet, style: RadarStyle):
+    """Speichert alle Style-Werte so ab, wie _load_style sie ausliest."""
     sheet["A1"] = "Property"
     sheet["B1"] = "Value"
     style_dict = {
@@ -181,18 +180,22 @@ def _save_style(sheet, style: RadarStyle):
         sheet.cell(row=row, column=2, value=value)
 
 
-def save_chart(chart: RadarChart, filepath: str):
-    """Speichert ein RadarChart als Excel-Datei."""
-    workbook = Workbook()
+def save_chart(chart: RadarChart, filepath: str) -> None:
+    """Speichert ein RadarChart-Objekt in einer strukturierten Excel-Datei ab."""
+    wb = Workbook()
 
-    if "Sheet" in workbook.sheetnames:
-        del workbook["Sheet"]
-    meta_sheet = workbook.create_sheet("Meta", 0)
-    data_sheet = workbook.create_sheet("Data", 1)
-    style_sheet = workbook.create_sheet("Style", 2)
+    # 1. Sheet: Meta
+    ws_meta = wb.active
+    ws_meta.title = "Meta"
+    _save_meta(ws_meta, chart)
 
-    _save_meta(meta_sheet, chart)
-    _save_data(data_sheet, chart)
-    _save_style(style_sheet, chart.style)
+    # 2. Sheet: Style
+    ws_style = wb.create_sheet(title="Style")
+    _save_style(ws_style, chart.style)
 
-    workbook.save(filepath)
+    # 3. Sheet: Data
+    ws_data = wb.create_sheet(title="Data")
+    _save_data(ws_data, chart)
+
+    # Speichern
+    wb.save(filepath)

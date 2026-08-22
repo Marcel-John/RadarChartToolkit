@@ -2,11 +2,11 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox, colorchooser
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-import random  # NEU: Um zufällige Farben für neue Datensätze zu generieren
+import random 
 
 from models import RadarChart, RadarData, RadarDataset, RadarStyle
 from radar_plot import create_figure, export_chart_image
-from excel_handler import load_chart
+from excel_handler import load_chart, save_chart
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -230,6 +230,9 @@ class StarChartEditor(ctk.CTk):
         self.btn_load = ctk.CTkButton(self.sidebar_frame, text="Excel Laden", command=self.load_from_excel)
         self.btn_load.pack(pady=5, padx=20, fill="x")
 
+        self.btn_save_excel = ctk.CTkButton(self.sidebar_frame, text="Excel Speichern", command=self.save_to_excel, fg_color="#3b7a57", hover_color="#2c5c41")
+        self.btn_save_excel.pack(pady=5, padx=20, fill="x")
+
         self.btn_edit = ctk.CTkButton(self.sidebar_frame, text="Daten bearbeiten", command=self.open_data_editor, fg_color="#1f538d")
         self.btn_edit.pack(pady=5, padx=20, fill="x")
 
@@ -369,6 +372,21 @@ class StarChartEditor(ctk.CTk):
                 messagebox.showinfo("Erfolg", f"Bild erfolgreich gespeichert unter:\n{filepath}")
             except Exception as e:
                 messagebox.showerror("Fehler beim Export", f"Das Bild konnte nicht gespeichert werden:\n\n{str(e)}")
+
+    def save_to_excel(self):
+     """Öffnet einen Speichern-Dialog und exportiert das Chart als Excel-Datei."""
+     filepath = filedialog.asksaveasfilename(
+         title="Excel-Datei speichern",
+         defaultextension=".xlsx",
+         filetypes=[("Excel Files", "*.xlsx")]
+     )
+
+     if filepath:
+         try:
+             save_chart(self.current_chart, filepath)
+             messagebox.showinfo("Erfolg", f"Excel-Datei erfolgreich gespeichert unter:\n{filepath}")
+         except Exception as e:
+             messagebox.showerror("Fehler beim Speichern", f"Die Datei konnte nicht gespeichert werden:\n\n{str(e)}")
 
 if __name__ == "__main__":
     app = StarChartEditor()
