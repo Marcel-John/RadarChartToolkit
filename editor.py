@@ -10,6 +10,123 @@ from excel_handler import load_chart
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
+class DataEditorWindow(ctk.CTkToplevel):
+    """Pop-up Fenster zum Bearbeiten, Hinzufügen und Löschen von Diagramm-Werten."""
+    def __init__(self, parent, chart: RadarChart, update_callback):
+        super().__init__(parent)
+        self.title("Daten & Werte bearbeiten")
+        self.geometry("750x500")
+        
+        # Blockiert das Hauptfenster, solange dieses Pop-up offen ist
+        self.transient(parent)
+        self.grab_set()
+
+        self.chart = chart
+        self.update_callback = update_callback
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        # Scrollbarer Bereich für die Tabelle
+        self.scroll_frame = ctk.CTkScrollableFrame(self)
+        self.scroll_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+
+        # Unterer Bereich für neue Kategorien und Speichern
+        self.bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.bottom_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
+
+        self.new_cat_entry = ctk.CTkEntry(self.bottom_frame, placeholder_text="Neue Kategorie (z.B. Magie)")
+        self.new_cat_entry.pack(side="left", padx=5)
+        
+        self.btn_add_cat = ctk.CTkButton(self.bottom_frame, text="Kategorie hinzufügen", command=self.add_category)
+        self.btn_add_cat.pack(side="left", padx=5)
+
+        self.btn_apply = ctk.CTkButton(
+            self.bottom_frame, text="Werte übernehmen", 
+            command=self.apply_values, fg_color="#2b8256", hover_color="#1e5c3d"
+        )
+        self.btn_apply.pack(side="right", padx=5)
+
+        self.entries = {}
+        self.build_grid()
+
+    def build_grid(self):
+        """Baut die Tabelle mit Kategorien und Werten auf."""
+        # Altes Grid löschen
+        for widget in self.scroll_frame.winfo_children():
+            widget.destroy()
+        self.entries.clear()
+
+        # Tabellenkopf (Header)
+        ctk.CTkLabel(self.scroll_frame, text="Kategorie", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        for c, ds in enumerate(self.chart.data.datasets):
+            ctk.CTkLabel(self.scroll_frame, text=ds.name, font=ctk.CTkFont(weight="bold")).grid(row=0, column=c+1, padx=10, pady=5)
+
+        # Tabellen-Zeilen (Daten)
+        for r, label in enumerate(self.chart.data.labels):
+            # Kategorie-Name
+            ctk.CTkLabel(self.scroll_frame, text=label).grid(row=r+1, column=0, padx=10, pady=5, sticky="w")
+
+            # Eingabefelder für jeden Datensatz
+            for c, ds in enumerate(self.chart.data.datasets):
+                val = ds.values[r]
+                entry = ctk.CTkEntry(self.scroll_frame, width=80)
+                entry.insert(0, str(val))
+                entry.grid(row=r+1, column=c+1, padx=10, pady=5)
+                self.entries[(r, c)] = entry
+
+            # Löschen-Button für die ganze Kategorie
+            btn_del = ctk.CTkButton(
+                self.scroll_frame, text="X", width=30, 
+                fg_color="#a83232", hover_color="#7a2424", 
+                command=lambda idx=r: self.delete_category(idx)
+            )
+            btn_del.grid(row=r+1, column=len(self.chart.data.datasets)+1, padx=20, pady=5)
+
+    def add_category(self):
+        """Fügt eine neue Achse/Kategorie hinzu."""
+        new_cat = self.new_cat_entry.get().strip()
+        if not new_cat:
+            return
+
+        self.chart.data.labels.append(new_cat)
+        # Jedem Datensatz einen Startwert (0.0) für die neue Kategorie geben
+        for ds in self.chart.data.datasets:
+            ds.values.append(0.0)
+
+        self.new_cat_entry.delete(0, 'end')
+        self.build_grid()
+        self.update_callback()
+
+    def delete_category(self, idx):
+        """Löscht eine Achse/Kategorie."""
+        if len(self.chart.data.labels) <= 3:
+            messagebox.showwarning("Achtung", "Ein Radar-Chart benötigt mindestens 3 Kategorien!")
+            return
+
+        del self.chart.data.labels[idx]
+        for ds in self.chart.data.datasets:
+            del ds.values[idx]
+
+        self.build_grid()
+        self.update_callback()
+
+    def apply_values(self):
+        """Liest die Textfelder aus und speichert die Werte im Diagramm."""
+        try:
+            for (r, c), entry in self.entries.items():
+                val = float(entry.get())
+                self.chart.data.datasets[c].values[r] = val
+            
+            self.update_callback()
+            
+            # Kurzes visuelles Feedback
+            self.btn_apply.configure(text="✓ Gespeichert")
+            self.after(1500, lambda: self.btn_apply.configure(text="Werte übernehmen"))
+        except ValueError:
+            messagebox.showerror("Fehler", "Bitte nur gültige Zahlen eingeben (z.B. 10 oder 5.5).")
+
+
 class StarChartEditor(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -32,13 +149,16 @@ class StarChartEditor(ctk.CTk):
         self.btn_load = ctk.CTkButton(self.sidebar_frame, text="Excel Laden", command=self.load_from_excel)
         self.btn_load.pack(pady=5, padx=20, fill="x")
 
+        # NEU: Daten bearbeiten Button
+        self.btn_edit = ctk.CTkButton(self.sidebar_frame, text="Daten bearbeiten", command=self.open_data_editor, fg_color="#1f538d")
+        self.btn_edit.pack(pady=5, padx=20, fill="x")
+
         self.btn_save = ctk.CTkButton(self.sidebar_frame, text="Als Bild exportieren", command=self.export_image)
         self.btn_save.pack(pady=5, padx=20, fill="x")
 
         ctk.CTkFrame(self.sidebar_frame, height=2, fg_color="gray30").pack(fill="x", pady=15, padx=20)
 
         # --- EINSTELLUNGEN ---
-        
         # 1. Titel
         ctk.CTkLabel(self.sidebar_frame, text="Diagramm-Titel:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20)
         
@@ -68,11 +188,9 @@ class StarChartEditor(ctk.CTk):
         # --- DATENSÄTZE & FARBEN ---
         ctk.CTkLabel(self.sidebar_frame, text="Farben der Datensätze:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20)
         
-        # Leerer Frame, der später dynamisch mit Buttons gefüllt wird
         self.datasets_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
         self.datasets_frame.pack(fill="x", padx=20, pady=(5, 10))
 
-        # --- BUTTON ZUM ANWENDEN DER ÄNDERUNGEN ---
         self.btn_apply = ctk.CTkButton(self.sidebar_frame, text="Ansicht aktualisieren", command=self.apply_changes, fg_color="#2b8256", hover_color="#1e5c3d")
         self.btn_apply.pack(pady=20, padx=20, fill="x")
 
@@ -86,6 +204,10 @@ class StarChartEditor(ctk.CTk):
         self._sync_sidebar_from_chart()
         self.update_preview()
 
+    def open_data_editor(self):
+        """Öffnet das Pop-up Fenster zum Bearbeiten der Werte."""
+        DataEditorWindow(self, self.current_chart, self.update_preview)
+
     def _create_dummy_chart(self) -> RadarChart:
         ds = RadarDataset(name="Beispiel", values=[50, 75, 60, 90, 80], color="#007ACC", marker="o", line_width=2.0)
         data = RadarData(title="Live Vorschau", labels=["Angriff", "Verteidigung", "Tempo", "Technik", "Ausdauer"], datasets=[ds])
@@ -93,17 +215,14 @@ class StarChartEditor(ctk.CTk):
         return RadarChart(data=data, style=style)
 
     def _sync_sidebar_from_chart(self):
-        """Aktualisiert alle Sidebar-Regler basierend auf dem aktuellen Chart."""
         self._is_updating_ui = True
 
-        # Textfeld und Slider
         self.entry_title.delete(0, "end")
         self.entry_title.insert(0, self.current_chart.data.title)
         self.slider_alpha.set(self.current_chart.style.alpha)
         self.slider_rings.set(self.current_chart.style.ring_count)
         self._update_slider_labels()
 
-        # Farb-Buttons für jeden Datensatz neu generieren
         for widget in self.datasets_frame.winfo_children():
             widget.destroy()
 
@@ -114,33 +233,22 @@ class StarChartEditor(ctk.CTk):
             lbl = ctk.CTkLabel(row_frame, text=ds.name)
             lbl.pack(side="left")
             
-            # Farb-Block Button
             btn_color = ctk.CTkButton(
-                row_frame, 
-                text="", 
-                width=40, 
-                height=20,
-                corner_radius=4,
-                border_width=1,
-                border_color="gray50",
-                fg_color=ds.color, 
-                hover_color=ds.color,
-                command=lambda dataset=ds: self._change_dataset_color(dataset)
+                row_frame, text="", width=40, height=20, corner_radius=4,
+                border_width=1, border_color="gray50", fg_color=ds.color, 
+                hover_color=ds.color, command=lambda dataset=ds: self._change_dataset_color(dataset)
             )
             btn_color.pack(side="right")
 
         self._is_updating_ui = False
 
     def _change_dataset_color(self, dataset):
-        """Öffnet den Farbwähler und aktualisiert die Farbe für den Datensatz."""
-        # colorchooser gibt ein Tupel zurück: ((r, g, b), '#hexcode')
         color_result = colorchooser.askcolor(title=f"Farbe für {dataset.name}", initialcolor=dataset.color)
-        
         hex_color = color_result[1]
-        if hex_color:  # Wenn der Nutzer nicht auf "Abbrechen" geklickt hat
+        if hex_color:
             dataset.color = hex_color
-            self._sync_sidebar_from_chart()  # Buttons aktualisieren
-            self.update_preview()            # Diagramm sofort neu zeichnen
+            self._sync_sidebar_from_chart()
+            self.update_preview()
 
     def _update_slider_labels(self, value=None):
         if self._is_updating_ui: return
