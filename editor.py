@@ -17,7 +17,6 @@ class DataEditorWindow(ctk.CTkToplevel):
         self.title("Daten & Werte bearbeiten")
         self.geometry("750x500")
         
-        # Blockiert das Hauptfenster, solange dieses Pop-up offen ist
         self.transient(parent)
         self.grab_set()
 
@@ -27,11 +26,9 @@ class DataEditorWindow(ctk.CTkToplevel):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        # Scrollbarer Bereich für die Tabelle
         self.scroll_frame = ctk.CTkScrollableFrame(self)
         self.scroll_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        # Unterer Bereich für neue Kategorien und Speichern
         self.bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.bottom_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
 
@@ -48,34 +45,38 @@ class DataEditorWindow(ctk.CTkToplevel):
         self.btn_apply.pack(side="right", padx=5)
 
         self.entries = {}
+        self.header_entries = [] # Hier speichern wir die Textfelder für die Namen der Datensätze
         self.build_grid()
 
     def build_grid(self):
-        """Baut die Tabelle mit Kategorien und Werten auf."""
-        # Altes Grid löschen
+        """Baut die Tabelle mit Kategorien, Datensatz-Namen und Werten auf."""
         for widget in self.scroll_frame.winfo_children():
             widget.destroy()
+        
         self.entries.clear()
+        self.header_entries.clear()
 
         # Tabellenkopf (Header)
         ctk.CTkLabel(self.scroll_frame, text="Kategorie", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        
+        # Statt Labels nutzen wir jetzt Entry-Felder für die Namen der Datensätze
         for c, ds in enumerate(self.chart.data.datasets):
-            ctk.CTkLabel(self.scroll_frame, text=ds.name, font=ctk.CTkFont(weight="bold")).grid(row=0, column=c+1, padx=10, pady=5)
+            entry_name = ctk.CTkEntry(self.scroll_frame, font=ctk.CTkFont(weight="bold"), width=120)
+            entry_name.insert(0, ds.name)
+            entry_name.grid(row=0, column=c+1, padx=10, pady=5)
+            self.header_entries.append(entry_name)
 
         # Tabellen-Zeilen (Daten)
         for r, label in enumerate(self.chart.data.labels):
-            # Kategorie-Name
             ctk.CTkLabel(self.scroll_frame, text=label).grid(row=r+1, column=0, padx=10, pady=5, sticky="w")
 
-            # Eingabefelder für jeden Datensatz
             for c, ds in enumerate(self.chart.data.datasets):
                 val = ds.values[r]
-                entry = ctk.CTkEntry(self.scroll_frame, width=80)
+                entry = ctk.CTkEntry(self.scroll_frame, width=120)
                 entry.insert(0, str(val))
                 entry.grid(row=r+1, column=c+1, padx=10, pady=5)
                 self.entries[(r, c)] = entry
 
-            # Löschen-Button für die ganze Kategorie
             btn_del = ctk.CTkButton(
                 self.scroll_frame, text="X", width=30, 
                 fg_color="#a83232", hover_color="#7a2424", 
@@ -83,14 +84,31 @@ class DataEditorWindow(ctk.CTkToplevel):
             )
             btn_del.grid(row=r+1, column=len(self.chart.data.datasets)+1, padx=20, pady=5)
 
+    def _save_current_state(self):
+        """Speichert alle aktuellen Eingaben aus den Textfeldern ins Modell."""
+        # 1. Namen der Datensätze speichern
+        for c, entry_name in enumerate(self.header_entries):
+            new_name = entry_name.get().strip()
+            if new_name:
+                self.chart.data.datasets[c].name = new_name
+                
+        # 2. Werte speichern
+        for (r, c), entry in self.entries.items():
+            val = float(entry.get())
+            self.chart.data.datasets[c].values[r] = val
+
     def add_category(self):
-        """Fügt eine neue Achse/Kategorie hinzu."""
         new_cat = self.new_cat_entry.get().strip()
         if not new_cat:
             return
 
+        try:
+            self._save_current_state() # Vorherige Änderungen sichern
+        except ValueError:
+            messagebox.showerror("Fehler", "Bitte erst ungültige Zahlen korrigieren, bevor eine Kategorie hinzugefügt wird.")
+            return
+
         self.chart.data.labels.append(new_cat)
-        # Jedem Datensatz einen Startwert (0.0) für die neue Kategorie geben
         for ds in self.chart.data.datasets:
             ds.values.append(0.0)
 
@@ -99,9 +117,14 @@ class DataEditorWindow(ctk.CTkToplevel):
         self.update_callback()
 
     def delete_category(self, idx):
-        """Löscht eine Achse/Kategorie."""
         if len(self.chart.data.labels) <= 3:
             messagebox.showwarning("Achtung", "Ein Radar-Chart benötigt mindestens 3 Kategorien!")
+            return
+
+        try:
+            self._save_current_state()
+        except ValueError:
+            messagebox.showerror("Fehler", "Bitte erst ungültige Zahlen korrigieren, bevor eine Kategorie gelöscht wird.")
             return
 
         del self.chart.data.labels[idx]
@@ -112,15 +135,10 @@ class DataEditorWindow(ctk.CTkToplevel):
         self.update_callback()
 
     def apply_values(self):
-        """Liest die Textfelder aus und speichert die Werte im Diagramm."""
         try:
-            for (r, c), entry in self.entries.items():
-                val = float(entry.get())
-                self.chart.data.datasets[c].values[r] = val
-            
+            self._save_current_state()
             self.update_callback()
             
-            # Kurzes visuelles Feedback
             self.btn_apply.configure(text="✓ Gespeichert")
             self.after(1500, lambda: self.btn_apply.configure(text="Werte übernehmen"))
         except ValueError:
@@ -149,7 +167,6 @@ class StarChartEditor(ctk.CTk):
         self.btn_load = ctk.CTkButton(self.sidebar_frame, text="Excel Laden", command=self.load_from_excel)
         self.btn_load.pack(pady=5, padx=20, fill="x")
 
-        # NEU: Daten bearbeiten Button
         self.btn_edit = ctk.CTkButton(self.sidebar_frame, text="Daten bearbeiten", command=self.open_data_editor, fg_color="#1f538d")
         self.btn_edit.pack(pady=5, padx=20, fill="x")
 
@@ -159,7 +176,6 @@ class StarChartEditor(ctk.CTk):
         ctk.CTkFrame(self.sidebar_frame, height=2, fg_color="gray30").pack(fill="x", pady=15, padx=20)
 
         # --- EINSTELLUNGEN ---
-        # 1. Titel
         ctk.CTkLabel(self.sidebar_frame, text="Diagramm-Titel:", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=20)
         
         self.title_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
@@ -169,14 +185,12 @@ class StarChartEditor(ctk.CTk):
         self.entry_title.pack(side="left", fill="x", expand=True, padx=(0, 5))
         self.entry_title.bind("<Return>", lambda e: self.apply_changes())
 
-        # 2. Transparenz
         self.lbl_alpha = ctk.CTkLabel(self.sidebar_frame, text="Transparenz (0.20):", font=ctk.CTkFont(weight="bold"))
         self.lbl_alpha.pack(anchor="w", padx=20, pady=(10, 0))
         
         self.slider_alpha = ctk.CTkSlider(self.sidebar_frame, from_=0.0, to=1.0, number_of_steps=20, command=self._update_slider_labels)
         self.slider_alpha.pack(pady=(2, 10), padx=20, fill="x")
 
-        # 3. Ring-Anzahl
         self.lbl_rings = ctk.CTkLabel(self.sidebar_frame, text="Gitter-Ringe (5):", font=ctk.CTkFont(weight="bold"))
         self.lbl_rings.pack(anchor="w", padx=20, pady=(10, 0))
 
@@ -204,9 +218,13 @@ class StarChartEditor(ctk.CTk):
         self._sync_sidebar_from_chart()
         self.update_preview()
 
+    def _on_data_edited(self):
+        """Wird aufgerufen, wenn im Pop-up Änderungen vorgenommen wurden."""
+        self._sync_sidebar_from_chart() # Sidebar anpassen (falls Namen geändert wurden)
+        self.update_preview()           # Diagramm neu zeichnen
+
     def open_data_editor(self):
-        """Öffnet das Pop-up Fenster zum Bearbeiten der Werte."""
-        DataEditorWindow(self, self.current_chart, self.update_preview)
+        DataEditorWindow(self, self.current_chart, self._on_data_edited)
 
     def _create_dummy_chart(self) -> RadarChart:
         ds = RadarDataset(name="Beispiel", values=[50, 75, 60, 90, 80], color="#007ACC", marker="o", line_width=2.0)
