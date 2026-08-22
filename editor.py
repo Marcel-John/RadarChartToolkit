@@ -2,6 +2,7 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox, colorchooser
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
+import random  # NEU: Um zufällige Farben für neue Datensätze zu generieren
 
 from models import RadarChart, RadarData, RadarDataset, RadarStyle
 from radar_plot import create_figure, export_chart_image
@@ -15,7 +16,7 @@ class DataEditorWindow(ctk.CTkToplevel):
     def __init__(self, parent, chart: RadarChart, update_callback):
         super().__init__(parent)
         self.title("Daten & Werte bearbeiten")
-        self.geometry("750x500")
+        self.geometry("850x550") # Etwas breiter gemacht, damit alles gut reinpasst
         
         self.transient(parent)
         self.grab_set()
@@ -29,23 +30,34 @@ class DataEditorWindow(ctk.CTkToplevel):
         self.scroll_frame = ctk.CTkScrollableFrame(self)
         self.scroll_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
+        # Unterer Bereich für das Hinzufügen
         self.bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.bottom_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
+        self.bottom_frame.grid_columnconfigure(2, weight=1) # Schiebt den "Übernehmen" Button nach rechts
 
+        # Zeile 1: Kategorie hinzufügen
         self.new_cat_entry = ctk.CTkEntry(self.bottom_frame, placeholder_text="Neue Kategorie (z.B. Magie)")
-        self.new_cat_entry.pack(side="left", padx=5)
+        self.new_cat_entry.grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
         self.btn_add_cat = ctk.CTkButton(self.bottom_frame, text="Kategorie hinzufügen", command=self.add_category)
-        self.btn_add_cat.pack(side="left", padx=5)
+        self.btn_add_cat.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
+        # Zeile 2: Datensatz hinzufügen (NEU)
+        self.new_ds_entry = ctk.CTkEntry(self.bottom_frame, placeholder_text="Neuer Datensatz (z.B. Paladin)")
+        self.new_ds_entry.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        
+        self.btn_add_ds = ctk.CTkButton(self.bottom_frame, text="Datensatz hinzufügen", command=self.add_dataset)
+        self.btn_add_ds.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+
+        # Button zum Speichern rechts anordnen
         self.btn_apply = ctk.CTkButton(
             self.bottom_frame, text="Werte übernehmen", 
             command=self.apply_values, fg_color="#2b8256", hover_color="#1e5c3d"
         )
-        self.btn_apply.pack(side="right", padx=5)
+        self.btn_apply.grid(row=0, column=3, rowspan=2, padx=5, pady=5, sticky="e")
 
         self.entries = {}
-        self.header_entries = [] # Hier speichern wir die Textfelder für die Namen der Datensätze
+        self.header_entries = [] 
         self.build_grid()
 
     def build_grid(self):
@@ -59,12 +71,23 @@ class DataEditorWindow(ctk.CTkToplevel):
         # Tabellenkopf (Header)
         ctk.CTkLabel(self.scroll_frame, text="Kategorie", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
         
-        # Statt Labels nutzen wir jetzt Entry-Felder für die Namen der Datensätze
         for c, ds in enumerate(self.chart.data.datasets):
-            entry_name = ctk.CTkEntry(self.scroll_frame, font=ctk.CTkFont(weight="bold"), width=120)
+            # Frame für das Eingabefeld UND den Löschen-Button des Datensatzes
+            header_frame = ctk.CTkFrame(self.scroll_frame, fg_color="transparent")
+            header_frame.grid(row=0, column=c+1, padx=10, pady=5)
+
+            entry_name = ctk.CTkEntry(header_frame, font=ctk.CTkFont(weight="bold"), width=100)
             entry_name.insert(0, ds.name)
-            entry_name.grid(row=0, column=c+1, padx=10, pady=5)
+            entry_name.pack(side="left", padx=(0, 5))
             self.header_entries.append(entry_name)
+
+            # Löschen-Button für den ganzen Datensatz
+            btn_del_ds = ctk.CTkButton(
+                header_frame, text="X", width=25, height=25,
+                fg_color="#a83232", hover_color="#7a2424", 
+                command=lambda idx=c: self.delete_dataset(idx)
+            )
+            btn_del_ds.pack(side="left")
 
         # Tabellen-Zeilen (Daten)
         for r, label in enumerate(self.chart.data.labels):
@@ -72,40 +95,39 @@ class DataEditorWindow(ctk.CTkToplevel):
 
             for c, ds in enumerate(self.chart.data.datasets):
                 val = ds.values[r]
-                entry = ctk.CTkEntry(self.scroll_frame, width=120)
+                entry = ctk.CTkEntry(self.scroll_frame, width=130)
                 entry.insert(0, str(val))
                 entry.grid(row=r+1, column=c+1, padx=10, pady=5)
                 self.entries[(r, c)] = entry
 
-            btn_del = ctk.CTkButton(
+            # Löschen-Button für die ganze Kategorie (Zeile)
+            btn_del_cat = ctk.CTkButton(
                 self.scroll_frame, text="X", width=30, 
                 fg_color="#a83232", hover_color="#7a2424", 
                 command=lambda idx=r: self.delete_category(idx)
             )
-            btn_del.grid(row=r+1, column=len(self.chart.data.datasets)+1, padx=20, pady=5)
+            btn_del_cat.grid(row=r+1, column=len(self.chart.data.datasets)+1, padx=20, pady=5)
 
     def _save_current_state(self):
         """Speichert alle aktuellen Eingaben aus den Textfeldern ins Modell."""
-        # 1. Namen der Datensätze speichern
         for c, entry_name in enumerate(self.header_entries):
             new_name = entry_name.get().strip()
             if new_name:
                 self.chart.data.datasets[c].name = new_name
                 
-        # 2. Werte speichern
         for (r, c), entry in self.entries.items():
             val = float(entry.get())
             self.chart.data.datasets[c].values[r] = val
 
     def add_category(self):
+        """Fügt eine neue Achse/Zeile hinzu."""
         new_cat = self.new_cat_entry.get().strip()
-        if not new_cat:
-            return
+        if not new_cat: return
 
         try:
-            self._save_current_state() # Vorherige Änderungen sichern
+            self._save_current_state()
         except ValueError:
-            messagebox.showerror("Fehler", "Bitte erst ungültige Zahlen korrigieren, bevor eine Kategorie hinzugefügt wird.")
+            messagebox.showerror("Fehler", "Bitte erst ungültige Zahlen korrigieren.")
             return
 
         self.chart.data.labels.append(new_cat)
@@ -113,6 +135,30 @@ class DataEditorWindow(ctk.CTkToplevel):
             ds.values.append(0.0)
 
         self.new_cat_entry.delete(0, 'end')
+        self.build_grid()
+        self.update_callback()
+        
+    def add_dataset(self):
+        """Fügt einen neuen Datensatz (Spalte) hinzu."""
+        new_ds_name = self.new_ds_entry.get().strip()
+        if not new_ds_name: return
+
+        try:
+            self._save_current_state()
+        except ValueError:
+            messagebox.showerror("Fehler", "Bitte erst ungültige Zahlen korrigieren.")
+            return
+
+        # Zufällige Farbe generieren (Hex)
+        random_color = f"#{random.randint(0, 0xFFFFFF):06x}"
+        
+        # Leere Werte (0.0) für alle existierenden Kategorien anlegen
+        new_values = [0.0] * len(self.chart.data.labels)
+        
+        new_ds = RadarDataset(name=new_ds_name, values=new_values, color=random_color, marker="o", line_width=2.0)
+        self.chart.data.datasets.append(new_ds)
+
+        self.new_ds_entry.delete(0, 'end')
         self.build_grid()
         self.update_callback()
 
@@ -124,12 +170,29 @@ class DataEditorWindow(ctk.CTkToplevel):
         try:
             self._save_current_state()
         except ValueError:
-            messagebox.showerror("Fehler", "Bitte erst ungültige Zahlen korrigieren, bevor eine Kategorie gelöscht wird.")
+            messagebox.showerror("Fehler", "Bitte erst ungültige Zahlen korrigieren.")
             return
 
         del self.chart.data.labels[idx]
         for ds in self.chart.data.datasets:
             del ds.values[idx]
+
+        self.build_grid()
+        self.update_callback()
+        
+    def delete_dataset(self, idx):
+        """Löscht einen kompletten Datensatz (Spalte)."""
+        if len(self.chart.data.datasets) <= 1:
+            messagebox.showwarning("Achtung", "Es muss mindestens ein Datensatz im Diagramm bleiben!")
+            return
+
+        try:
+            self._save_current_state()
+        except ValueError:
+            messagebox.showerror("Fehler", "Bitte erst ungültige Zahlen korrigieren.")
+            return
+
+        del self.chart.data.datasets[idx]
 
         self.build_grid()
         self.update_callback()
@@ -219,9 +282,8 @@ class StarChartEditor(ctk.CTk):
         self.update_preview()
 
     def _on_data_edited(self):
-        """Wird aufgerufen, wenn im Pop-up Änderungen vorgenommen wurden."""
-        self._sync_sidebar_from_chart() # Sidebar anpassen (falls Namen geändert wurden)
-        self.update_preview()           # Diagramm neu zeichnen
+        self._sync_sidebar_from_chart() 
+        self.update_preview()           
 
     def open_data_editor(self):
         DataEditorWindow(self, self.current_chart, self._on_data_edited)
