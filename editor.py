@@ -224,16 +224,16 @@ class StarChartEditor(ctk.CTk):
         self.sidebar_frame = ctk.CTkScrollableFrame(self, width=320, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
 
-        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Chart Editor", font=ctk.CTkFont(size=20, weight="bold"))
+        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="Star Chart Editor", font=ctk.CTkFont(size=20, weight="bold"))
         self.logo_label.pack(pady=(20, 15))
 
         self.btn_load = ctk.CTkButton(self.sidebar_frame, text="Excel Laden", command=self.load_from_excel)
         self.btn_load.pack(pady=5, padx=20, fill="x")
 
-        self.btn_save_excel = ctk.CTkButton(self.sidebar_frame, text="Excel Speichern", command=self.save_to_excel, fg_color="#3b7a57", hover_color="#2c5c41")
+        self.btn_save_excel = ctk.CTkButton(self.sidebar_frame, text="Excel Speichern", command=self.save_to_excel)
         self.btn_save_excel.pack(pady=5, padx=20, fill="x")
 
-        self.btn_edit = ctk.CTkButton(self.sidebar_frame, text="Daten bearbeiten", command=self.open_data_editor, fg_color="#1f538d")
+        self.btn_edit = ctk.CTkButton(self.sidebar_frame, text="Daten bearbeiten", command=self.open_data_editor)
         self.btn_edit.pack(pady=5, padx=20, fill="x")
 
         self.btn_save = ctk.CTkButton(self.sidebar_frame, text="Als Bild exportieren", command=self.export_image)
