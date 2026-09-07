@@ -2,6 +2,16 @@
 
 Ein Python-Toolkit mit grafischer Benutzeroberfläche (CustomTkinter) zum Erstellen, Bearbeiten, Vergleichen und Exportieren von Radar Charts (Spinnennetz-Diagrammen).
 
+## Schnellstart (Windows App ohne Python)
+
+Du musst Python nicht installiert haben, um das Toolkit zu nutzen!
+
+1. Gehe auf die [Releases-Seite](https://github.com/Marcel-John/RadarChartToolkit/releases).
+2. Lade die neueste `RadarChartToolkit.exe` herunter.
+3. Starte die Datei direkt per Doppelklick.
+
+---
+
 ## Funktionen
 
 - **Grafischer Editor (GUI):** Moderne Benutzeroberfläche auf Basis von CustomTkinter.
@@ -12,16 +22,20 @@ Ein Python-Toolkit mit grafischer Benutzeroberfläche (CustomTkinter) zum Erstel
 - **Excel Import & Export:** Laden und Speichern von Diagramm-Daten inklusive Farb- und Style-Einstellungen in `.xlsx`-Dateien.
 - **Bild-Export:** Exportieren der fertigen Radar Charts als hochauflösende PNG-Grafik oder SVG-Vektorgrafik.
 
-## Installation
+---
 
-Repository klonen:
+## Entwicklung & Start aus dem Quellcode
+
+Falls du den Code anpassen oder das Projekt aus den Quelldateien ausführen möchtest:
+
+### 1. Repository klonen
 
 ```bash
 git clone [https://github.com/Marcel-John/RadarChartToolkit.git](https://github.com/Marcel-John/RadarChartToolkit.git)
 cd RadarChartToolkit
 ```
 
-### Virtuelle Umgebung erstellen (Empfohlen)
+### 2. Virtuelle Umgebung erstellen (Empfohlen)
 
 ```bash
 python -m venv venv
@@ -29,19 +43,19 @@ venv\Scripts\activate      # Windows
 # source venv/bin/activate  # Mac/Linux
 ```
 
-### Abhängigkeiten installieren
+### 3. Abhängigkeiten installieren
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Anwendung starten
-
-Starte den grafischen Editor einfach über:
+### 4. Anwendung starten
 
 ```bash
 python editor.py
 ```
+
+---
 
 ## Projektstruktur
 
@@ -51,6 +65,8 @@ python editor.py
 - `excel_handler.py` – Import- und Export-Logik für Excel-Dateien (`.xlsx`).
 - `excel_validator.py` – Überprüft die Struktur geladener Excel-Dateien auf Gültigkeit.
 - `json_handler.py` – Import- und Export-Logik für JSON-Dateien.
+
+---
 
 ## Contributing
 
