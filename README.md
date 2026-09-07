@@ -10,6 +10,10 @@ Du musst Python nicht installiert haben, um das Toolkit zu nutzen!
 2. Lade die neueste `RadarChartToolkit.exe` herunter.
 3. Starte die Datei direkt per Doppelklick.
 
+⚠️ Hinweis zur Windows-Warnung:
+Da dieses Tool ein kostenloses Open-Source-Projekt ist, besitzt es kein kommerzielles Entwickler-Zertifikat. Daher zeigt Windows beim ersten Start oft das blaue Fenster "Der Computer wurde durch Windows geschützt" an.
+Lösung: Klicke in dem blauen Fenster einfach auf "Weitere Informationen" und danach auf "Trotzdem ausführen". Der Quellcode ist hier auf GitHub zu 100 % offen und transparent einsehbar.
+
 ---
 
 ## Funktionen
