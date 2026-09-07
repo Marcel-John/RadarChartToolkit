@@ -7,8 +7,14 @@ __pycache__/
 venv/
 env/
 
-# VS Code
+# PyInstaller / Build
+build/
+dist/
+*.spec
+
+# VS Code & IDEs
 .vscode/
+.idea/
 
 # macOS
 .DS_Store
